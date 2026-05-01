@@ -130,6 +130,3 @@ predictions = head(features, features, variant_positions)
 
 
 
-## License
-
-MIT — free to use, modify, and build on.
