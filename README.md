@@ -8,7 +8,7 @@
 
 The human genome is made up of ~3 billion letters (A, T, G, C).
 
-Only **2% of it** produces proteins — the molecules that do most of the work in our cells. Scientists understand this 2% fairly well.
+Only **2% of it** produces proteins the molecules that do most of the work in our cells. Scientists understand this 2% fairly well.
 
 The other **98%** was once called "junk DNA." We now know that's wrong. This region acts like a **control panel**: it decides when, where, and how much each gene is switched on or off. Errors in this control panel are linked to cancer, diabetes, autism, and many other diseases.
 
