@@ -1,6 +1,6 @@
 # EvoFormer-NC
 
-**A deep learning model that predicts whether a DNA change can cause disease — focusing on the 98% of the genome that most tools ignore.**
+**A deep learning model that predicts whether a DNA change can cause disease focusing on the 98% of the genome that most tools ignore.**
 
 ---
 
