@@ -1,0 +1,16 @@
+torch>=2.0.0
+pytorch-lightning>=2.0.0
+torchmetrics>=1.0.0
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.3.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+pyyaml>=6.0
+tqdm>=4.65.0
+wandb>=0.15.0          # optional, for experiment tracking
+biopython>=1.81        # for FASTA / genome I/O
+pysam>=0.21.0          # for BAM/VCF handling
+pyBigWig>=0.3.18       # for conservation score bigWig files
+jupyter>=1.0.0         # for notebooks
+ipykernel>=6.0.0
