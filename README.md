@@ -1,215 +1,135 @@
-# 🧬 EvoFormer-NC
+# EvoFormer-NC
 
-### A Multi-Scale Transformer Architecture for Noncoding Variant Effect Prediction
-
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Status: Research Proposal](https://img.shields.io/badge/status-research%20proposal-orange.svg)]()
+**A deep learning model that predicts whether a DNA change can cause disease — focusing on the 98% of the genome that most tools ignore.**
 
 ---
 
-## 🌑 The Dark Genome Problem
+## What problem does this solve?
 
-Nearly **98% of the human genome** does not encode proteins. Once dismissed as *"junk DNA"*, these noncoding regions are now understood to form the genome's regulatory architecture — controlling when, where, and how much each gene is expressed.
+The human genome is made up of ~3 billion letters (A, T, G, C).
 
-Variants in these regions are strongly associated with complex diseases such as **cancer, diabetes, and autism**, yet predicting their functional consequences remains an open and largely unsolved problem.
+Only **2% of it** produces proteins — the molecules that do most of the work in our cells. Scientists understand this 2% fairly well.
 
-> *The question is not whether noncoding DNA matters. The question is: can we learn to read it?*
+The other **98%** was once called "junk DNA." We now know that's wrong. This region acts like a **control panel**: it decides when, where, and how much each gene is switched on or off. Errors in this control panel are linked to cancer, diabetes, autism, and many other diseases.
 
----
+The problem? **We don't know how to read it yet.**
 
-## 💡 Why Existing Models Fall Short
-
-| Model | Architecture | Context Window | Evolutionary Signal | Multi-Scale |
-|---|---|---|---|---|
-| Enformer | CNN + Transformer | 196 kb | ✗ | ✗ |
-| DNABERT-2 | BERT | 512 bp | ✗ | ✗ |
-| GPN-MSA | Transformer | 512 bp | ✓ | ✗ |
-| **EvoFormer-NC** | **Hierarchical Transformer** | **~1.5 Mb** | **✓** | **✓** |
-
-Existing models treat the genome as a flat sequence with a fixed context window and uniform attention. This design misses a fundamental biological reality: **regulatory effects operate across multiple scales simultaneously** — from local binding motifs (10–50 bp) to long-range enhancer-promoter interactions (up to 1 Mb).
+When a single letter changes in this 98% region (a "variant"), we usually can't tell whether it's harmless or disease-causing. Existing AI models struggle here because they only look at a small window of DNA at a time — but the control panel works across very large distances.
 
 ---
 
-## 🏗️ Architecture
+## What does EvoFormer-NC do?
 
-```
-Raw DNA Sequence  [A T G C A T G C ...]
-        │
-        ▼
-┌───────────────────────────────────────────────┐
-│           Multi-Scale Tokenizer               │
-│                                               │
-│  Local tokens    (6-mer,  ~10 bp)             │  ← TF binding motifs
-│  Regional tokens (64-mer, ~200 bp)            │  ← Nucleosome / CpG islands
-│  Macro tokens    (512-mer, ~1.5 kb)           │  ← Enhancer-promoter loops
-└───────────────────────────────────────────────┘
-        │
-        ▼
-┌───────────────────────────────────────────────┐
-│       Hierarchical Transformer Encoder        │
-│                                               │
-│  [Local Attn] → [Regional Attn] → [Macro Attn]│
-│              ↕ Cross-Scale Attention ↕        │
-└───────────────────────────────────────────────┘
-        │                    │
-        │    Evolutionary     │
-        │    Conservation     │
-        │    Embeddings ──────┘
-        │    (Zoonomia 240-mammal)
-        ▼
-┌───────────────────────────────────────────────┐
-│           Variant Effect Head                 │
-│                                               │
-│  • Regulatory impact score  (0–1)             │
-│  • Affected tissue type     (200+ cell types) │
-│  • Mechanism prediction     (enhancer / splice│
-│                              / silencer)      │
-└───────────────────────────────────────────────┘
-```
+EvoFormer-NC is a **transformer-based deep learning model** (the same technology behind ChatGPT, but applied to DNA) that:
 
-### Key Innovations
+1. **Reads DNA at three zoom levels at once**
+   - Close-up (~10 letters) → detects small binding sites
+   - Medium (~200 letters) → detects structural signals
+   - Wide (~1,500 letters) → detects long-range gene switches
 
-1. **Multi-Scale Tokenization** — DNA is tokenized at three resolutions simultaneously. Cross-scale attention allows local motifs to be interpreted in the context of long-range regulatory interactions.
+2. **Uses evolutionary history as a clue**
+   If a DNA position has stayed the same across 240 mammal species over millions of years, it's probably important. EvoFormer-NC uses this signal (from the [Zoonomia project](https://zoonomiaproject.org/)) to focus attention on what matters.
 
-2. **Evolutionary Priors** — Per-position conservation scores from 240-mammal alignments (Zoonomia) are injected as positional priors. A noncoding position conserved across 100 mammals is more likely to be functionally important.
-
-3. **Multi-Output Variant Head** — Unlike binary pathogenicity classifiers, EvoFormer-NC predicts *what kind* of disruption a variant causes and *in which tissue* — enabling mechanistic interpretation.
+3. **Predicts three things about any DNA change**
+   - How likely it is to be harmful (a score from 0 to 1)
+   - Which tissues or cell types are affected (e.g. liver, brain, heart)
+   - What kind of disruption it causes (e.g. a gene switch being broken)
 
 ---
 
-## 📁 Repository Structure
+## How is this different from existing models?
+
+| Model | Zoom levels | Uses evolution | Predicts tissue + mechanism |
+|---|---|---|---|
+| Enformer | 1 (wide only) | No | Partial |
+| DNABERT-2 | 1 (close only) | No | No |
+| GPN-MSA | 1 (close only) | Yes | No |
+| **EvoFormer-NC** | **3 (all at once)** | **Yes** | **Yes** |
+
+---
+
+## Project structure
 
 ```
 EvoFormer-NC/
-├── README.md
-├── LICENSE
-├── requirements.txt
-├── setup.py
-│
-├── data/
-│   ├── preprocessing/
-│   │   ├── encode_pipeline.py       # Download and process ENCODE data
-│   │   ├── conservation_scores.py   # Compute Zoonomia conservation embeddings
-│   │   └── variant_formatter.py     # Format ClinVar / GTEx variants
-│   └── splits/
-│       └── chromosome_splits.json   # Train/val/test split by chromosome
 │
 ├── model/
-│   ├── tokenizer.py                 # Multi-scale DNA tokenizer
-│   ├── encoder.py                   # Hierarchical transformer blocks
-│   ├── cross_scale_attn.py          # Cross-scale attention mechanism
-│   ├── evo_embeddings.py            # Evolutionary conservation embeddings
-│   └── variant_head.py              # Variant effect prediction head
+│   ├── tokenizer.py        ← Converts DNA letters into numbers the model can read
+│   ├── encoder.py          ← The main transformer that reads DNA at 3 zoom levels
+│   ├── evo_embeddings.py   ← Adds evolutionary conservation as extra context
+│   └── variant_head.py     ← Outputs the final predictions
 │
 ├── train/
-│   ├── train.py                     # Main training loop (PyTorch Lightning)
-│   ├── config.yaml                  # Hyperparameters and data paths
-│   └── losses.py                    # Multi-task loss function
+│   ├── train.py            ← Runs the training process
+│   ├── losses.py           ← Measures how wrong the model's predictions are
+│   └── config.yaml         ← All settings (learning rate, batch size, etc.)
 │
 ├── eval/
-│   ├── benchmark.py                 # Comparison against baselines
-│   ├── clinvar_eval.py              # ClinVar pathogenic variant evaluation
-│   └── visualize_attention.py       # Attention weight visualization
-│
-├── notebooks/
-│   ├── 01_data_exploration.ipynb    # Understanding the input data
-│   ├── 02_model_walkthrough.ipynb   # Step-by-step model explanation
-│   └── 03_variant_interpretation.ipynb  # Interpreting model predictions
+│   ├── benchmark.py        ← Compares EvoFormer-NC against other models
+│   └── visualize_attention.py ← Shows which DNA positions the model focused on
 │
 └── docs/
-    ├── proposal.md                  # Full research proposal
-    └── architecture.md              # Detailed architecture notes
+    └── proposal.md         ← Full research proposal
 ```
 
 ---
 
-## 🗃️ Training Data
+## Data sources
 
-| Dataset | Description | Size |
-|---|---|---|
-| ENCODE Phase 4 | Chromatin accessibility, histone marks | ~3,000 experiments |
-| GTEx v9 | eQTL data: variant → gene expression | ~50M variant-gene pairs |
-| ClinVar | Clinically annotated noncoding variants | ~200K variants |
-| Zoonomia | 240-mammal genome alignment | 240 genomes |
-| 1000 Genomes | Human population variation | ~84M variants |
+The model is trained on publicly available genomic datasets:
 
----
-
-## 📊 Evaluation
-
-We benchmark EvoFormer-NC against three strong baselines:
-
-- **Enformer** (Avsec et al., 2021)
-- **DNABERT-2** (Zhou et al., 2023)
-- **GPN-MSA** (Benegas et al., 2023)
-
-**Primary metric:** AUPRC on pathogenic vs. benign noncoding variant classification (ClinVar held-out set).
-
-**Additional benchmarks:**
-- eQTL prioritization on GTEx held-out chromosomes
-- Saturation mutagenesis prediction (CRISPR perturbation datasets)
+| Dataset | What it contains |
+|---|---|
+| [ENCODE Phase 4](https://www.encodeproject.org/) | Which parts of the genome are "active" in different cell types |
+| [GTEx v9](https://gtexportal.org/) | How DNA changes affect gene activity across human tissues |
+| [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) | Known disease-causing and harmless DNA variants |
+| [Zoonomia](https://zoonomiaproject.org/) | Genome alignments across 240 mammal species |
+| [1000 Genomes](https://www.internationalgenome.org/) | Natural DNA variation across human populations |
 
 ---
 
-## 🗓️ Roadmap (PhD Year 1)
-
-- [ ] Literature review & data pipeline setup *(Months 1–2)*
-- [ ] Baseline reproduction (Enformer, DNABERT-2) *(Months 3–4)*
-- [ ] EvoFormer-NC architecture implementation *(Months 5–7)*
-- [ ] HPC training (SLURM), hyperparameter search *(Months 8–10)*
-- [ ] Evaluation, benchmarking, paper draft *(Months 11–12)*
-
----
-
-## 🚀 Getting Started
+## Quick start
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/EvoFormer-NC.git
+git clone https://github.com/senacakici/EvoFormer-NC.git
 cd EvoFormer-NC
 pip install -r requirements.txt
 ```
-
-### Quick model instantiation
 
 ```python
 from model.tokenizer import MultiScaleTokenizer
 from model.encoder import EvoFormerEncoder
 from model.variant_head import VariantEffectHead
 
-tokenizer = MultiScaleTokenizer(scales=["local", "regional", "macro"])
-encoder = EvoFormerEncoder(d_model=512, n_heads=8, n_layers=6)
-head = VariantEffectHead(d_model=512, n_tissues=200)
+# Load components
+tokenizer = MultiScaleTokenizer()
+encoder   = EvoFormerEncoder(d_model=512)
+head      = VariantEffectHead(d_model=512, n_tissues=200)
 
-tokens = tokenizer.encode("ATGCATGCATGC...")
-features = encoder(tokens)
-predictions = head(features)
-# → {"impact_score": 0.87, "tissue": "liver", "mechanism": "enhancer_disruption"}
+# Encode a DNA sequence
+tokens = tokenizer.encode("ATGCATGCATGCATGCATGC...")
+
+# Run the model
+features    = encoder(tokens)
+predictions = head(features, features, variant_positions)
+
+# predictions["impact_score"]     → 0.87  (high = likely harmful)
+# predictions["tissue_logits"]    → which cell types are affected
+# predictions["mechanism_logits"] → what kind of disruption
 ```
 
 ---
 
-## 📖 Research Proposal
+## Roadmap
 
-Full research proposal is available in [`docs/proposal.md`](docs/proposal.md).
+-  Data pipeline (ENCODE + GTEx + ClinVar preprocessing)
+-  Baseline reproduction (Enformer, DNABERT-2, GPN-MSA)
+-  EvoFormer-NC architecture implementation
+-  Training on HPC cluster
+-  Benchmarking and paper draft
 
----
 
-## 📚 References
 
-- Avsec et al. (2021). Effective gene expression prediction from sequence by integrating long-range interactions. *Nature Methods*.
-- Zhou et al. (2023). DNABERT-2: Efficient Foundation Model and Benchmark for Multi-Species Genome. *arXiv*.
-- Nguyen et al. (2024). HyenaDNA: Long-Range Genomic Sequence Modeling at Single Nucleotide Resolution. *ICML*.
-- Zoonomia Consortium (2020). A comparative genomics multitool for scientific discovery. *Nature*.
-- Benegas et al. (2023). DNA language models are powerful predictors of genome-wide variant effects. *PNAS*.
+## License
 
----
-
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE) for details.
-
----
-
-*This repository represents a doctoral research proposal submitted to the CGR Lab, Chalmers University of Technology.*
+MIT — free to use, modify, and build on.
